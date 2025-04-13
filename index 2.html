@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>字幕影片自動產生工具</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+    }
+    input, button {
+      font-size: 1.2em;
+      margin: 1em;
+    }
+    #status {
+      margin-top: 1em;
+      color: #007700;
+      white-space: pre-line;
+    }
+    #download {
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎥 上傳影片，自動產生繁體中文字幕！</h2>
+  <input type="file" id="fileInput" accept="video/*">
+  <br />
+  <button onclick="uploadFile()">上傳並轉換</button>
+  <p id="status"></p>
+  <div id="download"></div>
+
+  <script>
+    async function uploadFile() {
+      const fileInput = document.getElementById('fileInput');
+      const status = document.getElementById('status');
+      const download = document.getElementById('download');
+      status.textContent = "";
+      download.innerHTML = "";
+
+      if (!fileInput.files.length) {
+        status.textContent = "⚠️ 請選擇影片檔案。";
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+
+      status.textContent = "📤 正在上傳與轉換中，請稍候... ⏳";
+
+      try {
+        const res = await fetch("https://liao.zeabur.app/webhook/upload-subtitle", {
+          method: "POST",
+          body: formData
+        });
+
+        let data = null;
+
+        try {
+          const text = await res.text(); // 改用 text() 先取原始
+          data = JSON.parse(text);
+        } catch (jsonErr) {
+          status.textContent = `❌ 無法解析回傳內容，請稍候再試\n錯誤訊息：${jsonErr.message}`;
+          return;
+        }
+
+        if (data.download_url) {
+          status.textContent = "✅ 處理完成！";
+          download.innerHTML = `<a href="${data.download_url}" target="_blank">🎬 點我下載字幕影片</a>`;
+        } else {
+          status.textContent = `⚠️ 未取得影片連結：\n${JSON.stringify(data, null, 2)}`;
+        }
+
+      } catch (e) {
+        status.textContent = `🚫 無法連線至伺服器：${e.message}\n請確認 n8n workflow 是否啟用且 webhook 正確。`;
+      }
+    }
+  </script>
+</body>
+</html>
