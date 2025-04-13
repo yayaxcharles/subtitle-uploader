@@ -45,23 +45,30 @@
 
       status.textContent = "正在上傳與轉換中，請稍候... ⏳";
 
-      try {
-        const res = await fetch("https://liao.zeabur.app/webhook/upload-subtitle", {
-          method: "POST",
-          body: formData
-        });
+try {
+  const res = await fetch("https://liao.zeabur.app/webhook/upload-subtitle", {
+    method: "POST",
+    body: formData
+  });
 
-        const data = await res.json();
+  let data = null;
 
-        if (data.download_url) {
-          status.textContent = "處理完成 ✅";
-          download.innerHTML = `<a href="${data.download_url}" target="_blank">🎬 點我下載字幕影片</a>`;
-        } else {
-          status.textContent = "處理失敗，請稍後再試 ❌";
-        }
-      } catch (e) {
-        status.textContent = "發生錯誤：「" + e.message + "」";
-      }
+  try {
+    data = await res.json();
+  } catch (jsonErr) {
+    status.textContent = `❌ 無法解析回傳內容（非 JSON）：${jsonErr.message}`;
+    return;
+  }
+
+  if (data.download_url) {
+    status.textContent = "處理完成 ✅";
+    download.innerHTML = `<a href="${data.download_url}" target="_blank">🎬 點我下載字幕影片</a>`;
+  } else {
+    status.textContent = `❌ 未收到影片連結，錯誤回應：${JSON.stringify(data)}`;
+  }
+} catch (e) {
+  status.textContent = `⚠️ 無法連線至 webhook，錯誤為：${e.message}。\n請確認 n8n workflow 有啟用，並使用 Production URL。`;
+}
     }
   </script>
 </body>
